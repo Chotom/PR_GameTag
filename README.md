@@ -34,7 +34,7 @@ WON'T:
 - dobra grafika
 
 ## Technologies
-C++
+C++ (SDL)
 
 ## Setup
 
