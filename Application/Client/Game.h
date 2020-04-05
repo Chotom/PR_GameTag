@@ -1,11 +1,12 @@
 #pragma once
+#include "GameObject.h"
 
 class Game {
 private:
-	SDL_Window *window;
-	SDL_Renderer *renderer;
+	SDL_Window* window;
+	GameObject* player;
+	
 	bool running = false;
-	unsigned char r = 0;
 public:
 	Game();
 	bool is_running();
@@ -14,5 +15,7 @@ public:
 	void render();
 	void clean();
 	void events();
-};
 
+	static SDL_Renderer* renderer;
+};
+ 
