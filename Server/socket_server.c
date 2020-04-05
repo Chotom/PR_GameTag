@@ -9,7 +9,7 @@
 #include <unistd.h> // for close
 #include <pthread.h>
 
-#define PORT 9090
+#define PORT 9990
 #define CLIENTS_COUNT 2
 
 void * socket_thread(void *arg) {
@@ -19,6 +19,10 @@ void * socket_thread(void *arg) {
     //pthread_mutex_lock(&lock);
     //pthread_mutex_unlock(&lock);
     sleep(1);
+
+    char message[1024] = "dupa dupa gowno cycki";
+    send(socket, message, strlen(message), 0);
+
     //send(newSocket,buffer,13,0);
     printf("Exit socketThread \n");
     close(socket);
@@ -28,7 +32,7 @@ void * socket_thread(void *arg) {
 int main(int argc, char const *argv[]) {
 
     /*
-        Create serv_socket in kernel
+        Create server socket in kernel
         AF_INET     - Internet family of IPv4 addresses
         SOCK_STREAM - TCP
 
@@ -41,7 +45,6 @@ int main(int argc, char const *argv[]) {
         printf("Socket creation error \n"); 
         return -1;
     }
-
 
     /*
         connection address data struct
@@ -66,15 +69,15 @@ int main(int argc, char const *argv[]) {
     //serverAddr.sin_addr.s_addr = INADDR_ANY                       // bind to all available interfaces
     memset(serv_addr.sin_zero, '\0', sizeof serv_addr.sin_zero);    // set to zero
 
-    // bind serv_socket to address
+    // bind server socket to address
     if (bind(serv_sock, (struct sockaddr *) &serv_addr, sizeof(serv_addr)) < 0) {
-        printf("Socketet binding error\n");
+        printf("Socket binding error\n");
         return -1;
     }
 
     // listen for max 2 connections queued
     if (listen(serv_sock, 2) < 0) {
-        printf("Socketet listening error\n");
+        printf("Socket listening error\n");
         return -1;
     }
 
@@ -83,8 +86,10 @@ int main(int argc, char const *argv[]) {
     printf("Server is now listening on port %d\n", PORT);
 
     for (int i = 0; i < CLIENTS_COUNT; ++i) {
+        int clilen;
+
         // accept client - creates socket for comunication
-        client_sock = accept(serv_sock, (struct sockaddr *) &client_addr, NULL);
+        client_sock = accept(serv_sock, (struct sockaddr *) &client_addr, &clilen);
         if (client_sock < 0) {
             printf("Accept error\n");
             return -1;
@@ -95,9 +100,13 @@ int main(int argc, char const *argv[]) {
         sleep(1);
 
         // create new thread for each client
-        if (pthread_create(&tid[0], NULL, socket_thread, &client_sock) != 0)
+        if (pthread_create(&tid[0], NULL, socket_thread, &client_sock) != 0) {
             printf("Failed to create thread for client\n");
+            return -1;
+        }
     }
+
+    sleep(10);
 
     return 0;
 }

@@ -9,7 +9,7 @@
 #include <unistd.h> // for close
 #include <pthread.h>
 
-#define PORT 9090
+#define PORT 9990
 #define CLIENTS_COUNT 2
 
 void * socket_thread(void *arg) {
@@ -28,20 +28,18 @@ void * socket_thread(void *arg) {
 int main(int argc, char const *argv[]) {
 
     /*
-        Create serv_socket in kernel
+        Create client socket in kernel
         AF_INET     - Internet family of IPv4 addresses
         SOCK_STREAM - TCP
 
         return value - non-negative serv_socket descriptor or -1 on error
      */
-    int serv_sock = socket(AF_INET, SOCK_STREAM, 0),    // server socket
-        client_sock;                                    // client socket - for later
+    int client_sock = socket(AF_INET, SOCK_STREAM, 0);
 
-    if (serv_sock < 0) { 
-        printf("Socket creation error \n"); 
+    if (client_sock < 0) { 
+        printf("Socket creation error\n"); 
         return -1;
     }
-
 
     /*
         connection address data struct
@@ -57,8 +55,7 @@ int main(int argc, char const *argv[]) {
             uint32_t        s_addr     address in network byte order (BE/LE)
         
      */
-    struct sockaddr_in serv_addr,       // server address
-        client_addr;                    // client address - for later
+    struct sockaddr_in serv_addr;       // server address
    
     serv_addr.sin_family = AF_INET;                                 // IPv4
     serv_addr.sin_port = htons(PORT);                               // port - htons ensures byte order (BE/LE)
@@ -66,38 +63,20 @@ int main(int argc, char const *argv[]) {
     //serverAddr.sin_addr.s_addr = INADDR_ANY                       // bind to all available interfaces
     memset(serv_addr.sin_zero, '\0', sizeof serv_addr.sin_zero);    // set to zero
 
-    // bind serv_socket to address
-    if (bind(serv_sock, (struct sockaddr *) &serv_addr, sizeof(serv_addr)) < 0) {
-        printf("Socketet binding error\n");
+    // connect client socket to server
+    if (connect(client_sock, (struct sockaddr *) &serv_addr, sizeof serv_addr) < 0) {
+        printf("Socket connect error\n");
         return -1;
     }
 
-    // listen for max 2 connections queued
-    if (listen(serv_sock, 2) < 0) {
-        printf("Socketet listening error\n");
-        return -1;
+    char buffer[1024];
+
+    // receive message from socket
+    if (recv(client_sock, buffer, 1024, 0) < 0) {
+       printf("Receive failed\n");
     }
 
-    pthread_t tid[CLIENTS_COUNT];
-
-    printf("Server is now listening on port %d\n", PORT);
-
-    for (int i = 0; i < CLIENTS_COUNT; ++i) {
-        // accept client - creates socket for comunication
-        client_sock = accept(serv_sock, (struct sockaddr *) &client_addr, NULL);
-        if (client_sock < 0) {
-            printf("Accept error\n");
-            return -1;
-        }
-
-        printf("Accepted first client\n");
-
-        sleep(1);
-
-        // create new thread for each client
-        if (pthread_create(&tid[0], NULL, socket_thread, &client_sock) != 0)
-            printf("Failed to create thread for client\n");
-    }
+    printf("Data received!\n%s\n", buffer);
 
     return 0;
 }
