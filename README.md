@@ -45,6 +45,7 @@ Kolejny socket tutorial - https://www.binarytides.com/socket-programming-c-linux
 Więcej o TCP/IP - https://www.thegeekstuff.com/2011/12/c-socket-programming/ <br>
 Diagram sekwencji - http://zasoby.open.agh.edu.pl/~09sbfraczek/diagram-sekwencji%2C1%2C13.html <br>
 O TCP i problemach - http://polishlinux.wikidot.com/sockety:teoriasockety:tcp <br>
+Textures - https://www.spriters-resource.com/arcade/pacman/<br>
 
 ## Credits
 - Michał Matczak
