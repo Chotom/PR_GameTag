@@ -1,6 +1,12 @@
-#include "Game.h"
+#ifdef _WIN32
+#include "SDL.h"
+#endif
 
-#include <SDL.h>
+#ifdef linux
+#include "SDL2/SDL.h"
+#endif
+
+#include "Game.h"
 
 Game::Game() {
 	

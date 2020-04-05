@@ -1,5 +1,13 @@
+#ifdef _WIN32
+#include "SDL.h"
+#endif
+
+#ifdef linux
+#include "SDL2/SDL.h"
+#endif
+
 #include "Game.h"
-#include <SDL.h>
+
 
 int main(int argc, char* argv[]) {
 	Game *game = new Game();
