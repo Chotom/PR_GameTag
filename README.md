@@ -46,6 +46,12 @@ Więcej o TCP/IP - https://www.thegeekstuff.com/2011/12/c-socket-programming/ <b
 Diagram sekwencji - http://zasoby.open.agh.edu.pl/~09sbfraczek/diagram-sekwencji%2C1%2C13.html <br>
 O TCP i problemach - http://polishlinux.wikidot.com/sockety:teoriasockety:tcp <br>
 Textures - https://www.spriters-resource.com/arcade/pacman/<br>
+Inne:
+https://www.bogotobogo.com/cplusplus/sockets_server_client.php
+http://www.crypto-it.net/pl/teoria/protokoly-tcp-ip.html
+https://dzone.com/articles/parallel-tcpip-socket-server-with-multi-threading
+https://linux.die.net/man/7/ip
+
 
 ## Credits
 - Michał Matczak
