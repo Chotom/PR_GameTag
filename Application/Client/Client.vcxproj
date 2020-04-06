@@ -22,11 +22,18 @@
     <ClCompile Include="Game.cpp" />
     <ClCompile Include="GameObject.cpp" />
     <ClCompile Include="main.cpp" />
+    <ClCompile Include="InMessage.cpp" />
+    <ClCompile Include="OutMessage.cpp" />
+    <ClCompile Include="Socket.cpp" />
     <ClCompile Include="TextureLoader.cpp" />
   </ItemGroup>
   <ItemGroup>
+    <ClInclude Include="constants.h" />
     <ClInclude Include="Game.h" />
     <ClInclude Include="GameObject.h" />
+    <ClInclude Include="InMessage.h" />
+    <ClInclude Include="OutMessage.h" />
+    <ClInclude Include="Socket.h" />
     <ClInclude Include="TextureLoader.h" />
   </ItemGroup>
   <PropertyGroup Label="Globals">

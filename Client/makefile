@@ -1,4 +1,6 @@
 all:
-	gcc socket_client.c -o socket_client.out -lpthread
+	gcc client.c -o client.out -lpthread
 clean:
-	rm *.out
+	rm -f *.out
+run: clean all
+	./client.out

@@ -12,19 +12,18 @@
 
 GameObject::GameObject(const char* texture_path) {
 	texture = TextureLoader::load_texture(texture_path);
+
+	dst_rect.x = 0;
+	dst_rect.y = 0;
+	dst_rect.h = height;
+	dst_rect.w = width;
 }
 
-void GameObject::update() {
-	x_pos++;
-	y_pos++;
-	
-	src_rect.x = x_pos;
-	src_rect.y = y_pos;
-	
-	src_rect.h = height;
-	src_rect.w = width;
+void GameObject::update(int x, int y) {
+	dst_rect.x = x;
+	dst_rect.y = y;
 }
 
 void GameObject::render() {
-	SDL_RenderCopy(Game::renderer, texture, NULL, NULL);
+	SDL_RenderCopy(Game::renderer, texture, NULL, &dst_rect);
 }

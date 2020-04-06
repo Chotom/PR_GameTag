@@ -8,16 +8,12 @@
 
 #include "Game.h"
 
-const int FPS = 60;
-const int FRAME_TIME = 1000/FPS;
-
 int main(int argc, char* argv[]) {
 	Uint32 start_time, end_time, duration;
 
-	Game* game = new Game();
+	Game* game = new Game("Berek", 600, 400);
 
-	game->init("Berek", 600, 400);
-	
+	// main game loop
 	while(game->is_running()) {
 		start_time = SDL_GetTicks();
 		
@@ -32,7 +28,7 @@ int main(int argc, char* argv[]) {
 		}
 	}
 
-	game->clean();
+	delete game;
 	
 	return 0;
 }

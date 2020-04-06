@@ -21,7 +21,7 @@ void * socket_thread(void *arg) {
     sleep(1);
 
     char message[1024] = "dupa dupa gowno cycki";
-    send(socket, message, strlen(message), 0);
+    send(socket, message, strlen(message) + 1, 0);
 
     //send(newSocket,buffer,13,0);
     printf("Exit socketThread \n");
