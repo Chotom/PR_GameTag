@@ -47,7 +47,7 @@ void * out_thread(void *arg) {
     struct message mess;
 
     // once every frame
-    while(1) {
+    while (1) {
         int time_start = get_time();
 
         // start of critical section
@@ -117,8 +117,8 @@ int main(int argc, char const *argv[]) {
     int serv_sock = socket(AF_INET, SOCK_STREAM, 0),    // server socket
         client_sock;                                    // client socket - for later
 
-    if (serv_sock < 0) { 
-        printf("Socket creation error \n"); 
+    if (serv_sock < 0) {
+        printf("Socket creation error \n");
         return -1;
     }
 

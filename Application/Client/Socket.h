@@ -26,4 +26,3 @@ public:
 	void send_message(char key);
 	InMessage* get_message();
 };
-

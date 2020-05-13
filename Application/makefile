@@ -1,4 +1,4 @@
-all: main.o Game.o GameObject.o TextureLoader.o Socket.o InMessage.o OutMessage.o
+all: directories main.o Game.o GameObject.o TextureLoader.o Socket.o InMessage.o OutMessage.o
 	g++ Debug/main.o Debug/Game.o Debug/GameObject.o Debug/TextureLoader.o Debug/Socket.o Debug/InMessage.o Debug/OutMessage.o -o Debug/main.out -lSDL2 -lSDL2main -lSDL2_image
 main.o:
 	g++ -c Client/main.cpp -o Debug/main.o
@@ -14,6 +14,11 @@ InMessage.o:
 	g++ -c Client/InMessage.cpp -o Debug/InMessage.o
 OutMessage.o:
 	g++ -c Client/OutMessage.cpp -o Debug/OutMessage.o
+
+
+directories:
+	mkdir Debug
+
 
 clean:
 	rm -f Debug/*.out Debug/*.o

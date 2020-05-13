@@ -1,9 +1,9 @@
 #include "constants.h"
 
 #ifdef _WIN32
-//#define _WINSOCK_DEPRECATED_NO_WARNINGS
+#pragma comment(lib, "Ws2_32.lib")
+#define _WINSOCK_DEPRECATED_NO_WARNINGS
 #include <winsock2.h>
-#include <ws2tcpip.h>
 #endif
 
 #ifdef linux
@@ -23,7 +23,7 @@ Socket::Socket() {
 
 #ifdef _WIN32
     WSADATA wsaData;
-	if (WSAStartup(MAKEWORD( 2, 2 ), &wsaData) != NO_ERROR) {
+	if (WSAStartup(MAKEWORD(2, 2), &wsaData) != NO_ERROR) {
         std::cout << "Initialization error" << std::endl;
 		exit(-1);
     }
@@ -37,7 +37,7 @@ Socket::Socket() {
 	
 	serv_addr.sin_family = AF_INET;                                    // IPv4
     serv_addr.sin_port = htons(PORT);                            // port - htons ensures byte order (BE/LE)
-    //serv_addr.sin_addr.s_addr = inet_addr("127.0.0.1");              // localhost
+    serv_addr.sin_addr.s_addr = inet_addr("127.0.0.1");              // localhost
     //inet_pton(AF_INET, "127.0.0.1", &serv_addr.sin_addr);              // localhost
     std::memset(serv_addr.sin_zero, '\0', sizeof(serv_addr.sin_zero));    // set to zero
 
