@@ -11,9 +11,9 @@
 #include <sys/time.h>
 
 #define PORT 9990
-#define CLIENTS_COUNT 1
+#define CLIENTS_COUNT 2
 
-#define FPS 60
+#define FPS 30
 #define FRAME_TIME (1000/FPS)
 
 #define LOCK pthread_mutex_lock(&semaphore);
