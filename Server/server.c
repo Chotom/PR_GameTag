@@ -29,7 +29,17 @@ struct player {
     char direction;
     int pos_x;
     int pos_y;
+
+    int (*AddPos)(int, int);
+
 } players[CLIENTS_COUNT];
+
+void player__AddPos(struct player *self, int x, int y) {
+    if (self->pos_x + x >= 0 && self->pos_x + x <= MAP_SIZE_X - PLAYER_SIZE)
+        self->pos_x += x;
+    if (self->pos_y + y >= 0 && self->pos_y + y <= MAP_SIZE_y - PLAYER_SIZE)
+        self->pos_y += y;
+}
 
 struct in_thread_data {
     int socket;
@@ -218,16 +228,20 @@ int main(int argc, char const *argv[]) {
         for (int i = 0; i < CLIENTS_COUNT; i++) {
             switch (players[i].direction) {
                 case 'w':
-                    players[i].pos_y--;
+                    //players[i].pos_y--;
+                    player__AddPos(&players[i], 0, -1);
                     break;
                 case 's':
-                    players[i].pos_y++;
+                    //players[i].pos_y++;
+                    player__AddPos(&players[i], 0, 1);
                     break;
                 case 'a':
-                    players[i].pos_x--;
+                    //players[i].pos_x--;
+                    player__AddPos(&players[i], -1, 0);
                     break;
                 case 'd':
-                    players[i].pos_x++;
+                    //players[i].pos_x++;
+                    player__AddPos(&players[i], 1, 0);
                     break;
             }
         }

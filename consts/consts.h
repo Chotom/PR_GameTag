@@ -15,5 +15,9 @@
 #define LOCK pthread_mutex_lock(&semaphore);
 #define UNLOCK pthread_mutex_unlock(&semaphore);
 
+#define MAP_SIZE_X 600
+#define MAP_SIZE_Y 400
+
+#define PLAYER_SIZE 32
 
 #endif

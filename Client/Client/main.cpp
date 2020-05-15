@@ -11,7 +11,7 @@
 int main(int argc, char* argv[]) {
 	Uint32 start_time, end_time, duration;
 
-	Game* game = new Game("Berek", 600, 400);
+	Game* game = new Game("Berek", MAP_SIZE_X, MAP_SIZE_Y);
 
 	// main game loop
 	while(game->is_running()) {
