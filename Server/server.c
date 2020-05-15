@@ -31,6 +31,11 @@ struct player {
     int pos_y;
 } players[CLIENTS_COUNT];
 
+struct in_thread_data {
+    int socket;
+    int player_id;
+} in_thread_player_data[CLIENTS_COUNT];
+
 
 void *out_thread(void *arg) {
     int socket = *((int *) arg);
@@ -71,21 +76,24 @@ void *out_thread(void *arg) {
     pthread_exit(NULL);
 }
 
-void *in_thread(void *arg) {
-    int socket = *((int *) arg);
+void *in_thread(void *args) {
+    struct in_thread_data *current_thread_data = (struct in_thread_data *) args;
+    int socket = current_thread_data->socket;
+    int player_id = current_thread_data->player_id;
 
     while (1) {
-        char dir = '\0';
+        struct OutMessage mess;
 
         // wait for player's direction to change
-        if (recv(socket, &dir, sizeof(char), 0) < 0) {
+        if (recv(socket, &mess, sizeof mess, 0) < 0) {
             printf("Server receive message error\n");
             exit(-1);
         }
 
         // start of critical section
         LOCK
-        direction = dir;
+        //direction = dir;
+        players[player_id].direction = mess.direction;
         UNLOCK
         // end of critical section
     }
@@ -189,7 +197,10 @@ int main(int argc, char const *argv[]) {
         }
 
         // create new thread for each client to handle incoming messages
-        if (pthread_create(&in_threads_id[i], NULL, in_thread, &client_sock) != 0) {
+        in_thread_player_data[i].socket = client_sock;
+        in_thread_player_data[i].player_id = i;
+
+        if (pthread_create(&in_threads_id[i], NULL, in_thread, &in_thread_player_data[i]) != 0) {
             printf("Failed to create thread for client\n");
             return -1;
         }
@@ -205,7 +216,7 @@ int main(int argc, char const *argv[]) {
 
         // move players
         for (int i = 0; i < CLIENTS_COUNT; i++) {
-            switch (direction) {
+            switch (players[i].direction) {
                 case 'w':
                     players[i].pos_y--;
                     break;
