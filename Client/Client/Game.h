@@ -5,13 +5,13 @@
 class Game {
 private:
 	SDL_Window* window;
-	GameObject* players[PLAYERS_COUNT];
-	
+	GameObject* players[CLIENTS_COUNT];
+
 	Socket* socket;
 	char latest_key = '\0';
 
 	int player_id = 0;
-	
+
 	bool running = false;
 public:
 	Game(const char* title, int width, int height);

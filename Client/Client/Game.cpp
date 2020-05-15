@@ -19,7 +19,7 @@ Game::Game(const char* title, int width, int height) {
 	SDL_SetRenderDrawColor(renderer, 255, 255, 255, 255);
 	running = true;
 
-	for (int i = 0; i < PLAYERS_COUNT; i++) {
+	for (int i = 0; i < CLIENTS_COUNT; i++) {
 		players[i] = new GameObject("assets/ghost.png");
 	}
 
@@ -27,7 +27,7 @@ Game::Game(const char* title, int width, int height) {
 }
 
 Game::~Game() {
-	for (int i = 0; i < PLAYERS_COUNT; i++) {
+	for (int i = 0; i < CLIENTS_COUNT; i++) {
 		delete players[i];
 	}
 	delete socket;
@@ -44,7 +44,7 @@ bool Game::is_running() {
 void Game::update() {
 	socket->receive_message();
 	InMessage* message = socket->get_message();
-	for (int i = 0; i < PLAYERS_COUNT; i++) {
+	for (int i = 0; i < CLIENTS_COUNT; i++) {
 		int new_x = message->pos_x[i];
 		int new_y = message->pos_y[i];
 
@@ -54,7 +54,7 @@ void Game::update() {
 
 void Game::render() {
 	SDL_RenderClear(renderer);
-	for (int i = 0; i < PLAYERS_COUNT; i++) {
+	for (int i = 0; i < CLIENTS_COUNT; i++) {
 		players[i]->render();
 	}
 	

@@ -1,6 +1,6 @@
 #pragma once
-#include "InMessage.h"
-#include "OutMessage.h"
+#include "../../consts/InMessage.h"
+#include "../../consts/OutMessage.h"
 
 #ifdef _WIN32
 #define _WINSOCK_DEPRECATED_NO_WARNINGS

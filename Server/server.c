@@ -11,41 +11,31 @@
 #include <pthread.h>
 #include <sys/time.h>
 
-#define PORT 9990
-#define CLIENTS_COUNT 2
-
-#define FPS 30
-#define FRAME_TIME (1000/FPS)
-
-#define LOCK pthread_mutex_lock(&semaphore);
-#define UNLOCK pthread_mutex_unlock(&semaphore);
+#include "../consts/consts.h"
+#include "../consts/InMessage.h"
+#include "../consts/OutMessage.h"
 
 pthread_mutex_t semaphore;
 
 int get_time() {
     struct timeval currentTime;
     gettimeofday(&currentTime, NULL);
-    return currentTime.tv_sec * (int)1000 + currentTime.tv_usec/1000;
+    return currentTime.tv_sec * (int) 1000 + currentTime.tv_usec / 1000;
 }
 
 char direction = 's';
 
 struct player {
+    char direction;
     int pos_x;
     int pos_y;
-};
+} players[CLIENTS_COUNT];
 
-struct player players[CLIENTS_COUNT];
 
-struct message {
-    int pos_x[CLIENTS_COUNT];
-    int pos_y[CLIENTS_COUNT];
-};
+void *out_thread(void *arg) {
+    int socket = *((int *) arg);
 
-void * out_thread(void *arg) {
-    int socket = *((int *)arg);
-
-    struct message mess;
+    struct InMessage mess;
 
     // once every frame
     while (1) {
@@ -63,7 +53,10 @@ void * out_thread(void *arg) {
         // end of critical section
 
         // send current players positions
-        send(socket, &mess, sizeof mess, 0);
+        if (send(socket, &mess, sizeof mess, 0) < 0) {
+            printf("Server sending message error\n");
+            exit(-1);
+        }
 
         int time_end = get_time();
         int duration = time_end - time_start;
@@ -78,16 +71,15 @@ void * out_thread(void *arg) {
     pthread_exit(NULL);
 }
 
-void * in_thread(void *arg) {
-    int socket = *((int *)arg);
+void *in_thread(void *arg) {
+    int socket = *((int *) arg);
 
-    struct message mess;
-
-    while(1) {
+    while (1) {
         char dir = '\0';
 
         // wait for player's direction to change
         if (recv(socket, &dir, sizeof(char), 0) < 0) {
+            printf("Server receive message error\n");
             exit(-1);
         }
 
@@ -116,7 +108,7 @@ int main(int argc, char const *argv[]) {
         return value - non-negative serv_socket descriptor or -1 on error
      */
     int serv_sock = socket(AF_INET, SOCK_STREAM, 0),    // server socket
-        client_sock;                                    // client socket - for later
+    client_sock;                                    // client socket - for later
 
     if (serv_sock < 0) {
         printf("Socket creation error \n");
@@ -138,11 +130,11 @@ int main(int argc, char const *argv[]) {
         
      */
     struct sockaddr_in serv_addr,       // server address
-        client_addr;                    // client address - for later
-   
+    client_addr;                    // client address - for later
+
     serv_addr.sin_family = AF_INET;                                 // IPv4
     serv_addr.sin_port = htons(PORT);                               // port - htons ensures byte order (BE/LE)
-    serv_addr.sin_addr.s_addr = inet_addr("127.0.0.1");             // localhost
+    serv_addr.sin_addr.s_addr = inet_addr(SERVER_IP);               // ip where server listen
     //serverAddr.sin_addr.s_addr = INADDR_ANY                       // bind to all available interfaces
     memset(serv_addr.sin_zero, '\0', sizeof serv_addr.sin_zero);    // set to zero
 
@@ -185,7 +177,8 @@ int main(int argc, char const *argv[]) {
         memset(host, '\0', NI_MAXHOST);
         memset(service, '\0', NI_MAXSERV);
 
-        if (getnameinfo((struct sockaddr *) &client_addr, sizeof client_addr, host, NI_MAXHOST, service, NI_MAXSERV, 0) == 0) {
+        if (getnameinfo((struct sockaddr *) &client_addr, sizeof client_addr, host, NI_MAXHOST, service, NI_MAXSERV,
+                        0) == 0) {
             printf("IP %s PORT %s\n", host, service);
         }
 
@@ -204,7 +197,7 @@ int main(int argc, char const *argv[]) {
 
     // main game loop - all players connected
     // once every frame
-    while(1) {
+    while (1) {
         int time_start = get_time();
 
         // start of critical section
@@ -213,23 +206,23 @@ int main(int argc, char const *argv[]) {
         // move players
         for (int i = 0; i < CLIENTS_COUNT; i++) {
             switch (direction) {
-            case 'w':
-                players[i].pos_y--;
-                break;
-            case 's':
-                players[i].pos_y++;
-                break;
-            case 'a':
-                players[i].pos_x--;
-                break;
-            case 'd':
-                players[i].pos_x++;
-                break;
+                case 'w':
+                    players[i].pos_y--;
+                    break;
+                case 's':
+                    players[i].pos_y++;
+                    break;
+                case 'a':
+                    players[i].pos_x--;
+                    break;
+                case 'd':
+                    players[i].pos_x++;
+                    break;
             }
         }
         UNLOCK
         // end of critical section
-        
+
         int time_end = get_time();
         int duration = time_end - time_start;
 

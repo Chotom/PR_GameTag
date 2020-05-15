@@ -1,5 +1,6 @@
 #pragma once
+
 struct OutMessage {
-	char direction;
+    char direction;
 };
 

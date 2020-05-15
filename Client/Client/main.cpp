@@ -16,7 +16,7 @@ int main(int argc, char* argv[]) {
 	// main game loop
 	while(game->is_running()) {
 		start_time = SDL_GetTicks();
-		
+
 		game->events();
 		game->update();
 		game->render();
@@ -29,6 +29,6 @@ int main(int argc, char* argv[]) {
 	}
 
 	delete game;
-	
+
 	return 0;
 }
