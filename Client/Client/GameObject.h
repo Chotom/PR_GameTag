@@ -11,6 +11,7 @@ public:
 	GameObject(const char* texture_path);
 
 	void update(int x, int y);
+    void change_texture(const char* texture_path);
 	void render();
 };
 

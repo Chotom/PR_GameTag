@@ -16,7 +16,7 @@ Game::Game(const char* title, int width, int height) {
 	SDL_Init(SDL_INIT_EVERYTHING);
 	window = SDL_CreateWindow(title, SDL_WINDOWPOS_CENTERED, SDL_WINDOWPOS_CENTERED, width, height, SDL_WINDOW_SHOWN);
 	renderer = SDL_CreateRenderer(window, -1, 0);
-	SDL_SetRenderDrawColor(renderer, 255, 255, 255, 255);
+	SDL_SetRenderDrawColor(renderer, 0, 0, 0, 0);
 	running = true;
 
 	for (int i = 0; i < CLIENTS_COUNT; i++) {
@@ -47,8 +47,13 @@ void Game::update() {
 	for (int i = 0; i < CLIENTS_COUNT; i++) {
 		int new_x = message->pos_x[i];
 		int new_y = message->pos_y[i];
+		int is_tagged = message->is_tagged[i];
 
 		players[i]->update(new_x, new_y);
+		if(is_tagged ==  0)
+            players[i]->change_texture("assets/ghost.png");
+		else
+            players[i]->change_texture("assets/pacman.png");
 	}
 }
 

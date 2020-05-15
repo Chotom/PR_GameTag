@@ -24,6 +24,10 @@ void GameObject::update(int x, int y) {
 	dst_rect.y = y;
 }
 
+void GameObject::change_texture(const char* texture_path){
+    texture = TextureLoader::load_texture(texture_path);
+}
+
 void GameObject::render() {
 	SDL_RenderCopy(Game::renderer, texture, NULL, &dst_rect);
 }

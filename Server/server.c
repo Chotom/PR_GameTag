@@ -14,6 +14,7 @@
 #include "../consts/consts.h"
 #include "../consts/InMessage.h"
 #include "../consts/OutMessage.h"
+#include "player.h"
 
 pthread_mutex_t semaphore;
 
@@ -24,22 +25,9 @@ int get_time() {
 }
 
 char direction = 's';
+int tagged_id = 0;
 
-struct player {
-    char direction;
-    int pos_x;
-    int pos_y;
-
-    int (*AddPos)(int, int);
-
-} players[CLIENTS_COUNT];
-
-void player__AddPos(struct player *self, int x, int y) {
-    if (self->pos_x + x >= 0 && self->pos_x + x <= MAP_SIZE_X - PLAYER_SIZE)
-        self->pos_x += x;
-    if (self->pos_y + y >= 0 && self->pos_y + y <= MAP_SIZE_y - PLAYER_SIZE)
-        self->pos_y += y;
-}
+struct Player players[CLIENTS_COUNT];
 
 struct in_thread_data {
     int socket;
@@ -63,7 +51,9 @@ void *out_thread(void *arg) {
         for (int i = 0; i < CLIENTS_COUNT; i++) {
             mess.pos_x[i] = players[i].pos_x;
             mess.pos_y[i] = players[i].pos_y;
+            mess.is_tagged[i] = players[i].is_tagged;
         }
+
         UNLOCK
         // end of critical section
 
@@ -118,37 +108,35 @@ int main(int argc, char const *argv[]) {
     // initialize semaphore
     pthread_mutex_init(&semaphore, NULL);
 
-    /*
-        Create server socket in kernel
-        AF_INET     - Internet family of IPv4 addresses
-        SOCK_STREAM - TCP
-
-        return value - non-negative serv_socket descriptor or -1 on error
-     */
-    int serv_sock = socket(AF_INET, SOCK_STREAM, 0),    // server socket
-    client_sock;                                    // client socket - for later
+    /* * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * *
+     * Create server socket in kernel
+     *
+     *    AF_INET     - Internet family of IPv4 addresses
+     *    SOCK_STREAM - TCP
+     *    return value - non-negative serv_socket descriptor or -1 on error
+     * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * */
+    int serv_sock = socket(AF_INET, SOCK_STREAM, 0);    // server socket
+    int client_sock;                                    // client socket - for later
 
     if (serv_sock < 0) {
         printf("Socket creation error \n");
         return -1;
     }
 
-    /*
-        connection address data struct
-        struct sockaddr_in
-            sa_family_t     sin_family      address family
-            in_port_t       sin_port        port in network
-            struct in_addr  sin_addr        internet address
-            char            sin_zero[8]     padding field - must be zero
-
-    
-        internet address struct
-        struct in_addr
-            uint32_t        s_addr     address in network byte order (BE/LE)
-        
-     */
-    struct sockaddr_in serv_addr,       // server address
-    client_addr;                    // client address - for later
+    /* * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * *
+     *  connection address data struct
+     *  struct sockaddr_in
+     *      sa_family_t     sin_family      address family
+     *      in_port_t       sin_port        port in network
+     *      struct in_addr  sin_addr        internet address
+     *      char            sin_zero[8]     padding field - must be zero
+     * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * *
+     *  internet address struct
+     *  struct in_addr
+     *      uint32_t        s_addr     address in network byte order (BE/LE)
+     * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * */
+    struct sockaddr_in serv_addr;     // server address
+    struct sockaddr_in client_addr;   // client address - for later
 
     serv_addr.sin_family = AF_INET;                                 // IPv4
     serv_addr.sin_port = htons(PORT);                               // port - htons ensures byte order (BE/LE)
@@ -162,8 +150,7 @@ int main(int argc, char const *argv[]) {
         return -1;
     }
 
-    // listen for max 2 connections queued
-    // 2 - number of queued connections we want on a socket
+    // listen for max 2 connections queued (2 - number of queued connections we want on a socket)
     if (listen(serv_sock, 2) < 0) {
         printf("Socket listening error\n");
         return -1;
@@ -174,19 +161,34 @@ int main(int argc, char const *argv[]) {
 
     printf("Server is now listening on port %d\n", PORT);
 
+    // Set tagged player
+    players[0].is_tagged = 0;
+    players[1].is_tagged = 1;
+    for  (int i = 0; i < CLIENTS_COUNT; ++i) {
+        if (players[i].is_tagged ==  1){
+            tagged_id = i;
+        }
+    }
+
     for (int i = 0; i < CLIENTS_COUNT; ++i) {
         int len;
+        Player__init(&players[i], i);   // Set start position for players
 
         // accept client - creates socket for comunication
         client_sock = accept(serv_sock, (struct sockaddr *) &client_addr, &len);
-        /*char str[INET_ADDRSTRLEN];
-		inet_ntop(AF_INET, &(client_addr.sin_addr), str, INET_ADDRSTRLEN);
-		printf("%s\n", str); // prints "192.0.2.33"
-        printf("Accepted client number %d: ", i);*/
+
         if (client_sock < 0) {
             printf("Accept error\n");
             return -1;
         }
+
+        /*
+        // print user network
+
+        char str[INET_ADDRSTRLEN];
+		inet_ntop(AF_INET, &(client_addr.sin_addr), str, INET_ADDRSTRLEN);
+		printf("%s\n", str); // prints "192.0.2.33"
+        */
 
         printf("Accepted client number %d. ", i);
 
@@ -195,8 +197,7 @@ int main(int argc, char const *argv[]) {
         memset(host, '\0', NI_MAXHOST);
         memset(service, '\0', NI_MAXSERV);
 
-        if (getnameinfo((struct sockaddr *) &client_addr, sizeof client_addr, host, NI_MAXHOST, service, NI_MAXSERV,
-                        0) == 0) {
+        if (getnameinfo((struct sockaddr *) &client_addr, sizeof client_addr, host, NI_MAXHOST, service, NI_MAXSERV, 0) == 0) {
             printf("IP %s PORT %s\n", host, service);
         }
 
@@ -229,22 +230,28 @@ int main(int argc, char const *argv[]) {
             switch (players[i].direction) {
                 case 'w':
                     //players[i].pos_y--;
-                    player__AddPos(&players[i], 0, -1);
+                    Player__AddPos(&players[i], 0, -1);
                     break;
                 case 's':
                     //players[i].pos_y++;
-                    player__AddPos(&players[i], 0, 1);
+                    Player__AddPos(&players[i], 0, 1);
                     break;
                 case 'a':
                     //players[i].pos_x--;
-                    player__AddPos(&players[i], -1, 0);
+                    Player__AddPos(&players[i], -1, 0);
                     break;
                 case 'd':
                     //players[i].pos_x++;
-                    player__AddPos(&players[i], 1, 0);
+                    Player__AddPos(&players[i], 1, 0);
                     break;
             }
         }
+
+        // Check for collision
+        for (int i = 0; i < CLIENTS_COUNT; i++) {
+            Player__CheckCollision(&players[i], &players[tagged_id]);
+        }
+
         UNLOCK
         // end of critical section
 
