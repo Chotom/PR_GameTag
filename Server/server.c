@@ -4,9 +4,10 @@
 
 #include <sys/socket.h>
 #include <netinet/in.h>
+#include <netdb.h>      // getaddrinfo()
 #include <arpa/inet.h>
-#include <fcntl.h> // for open
-#include <unistd.h> // for close
+#include <fcntl.h>      // open()
+#include <unistd.h>     // close()
 #include <pthread.h>
 #include <sys/time.h>
 
@@ -21,7 +22,7 @@
 
 pthread_mutex_t semaphore;
 
-int get_time(){
+int get_time() {
     struct timeval currentTime;
     gettimeofday(&currentTime, NULL);
     return currentTime.tv_sec * (int)1000 + currentTime.tv_usec/1000;
@@ -92,7 +93,7 @@ void * in_thread(void *arg) {
 
         // start of critical section
         LOCK
-            direction = dir;
+        direction = dir;
         UNLOCK
         // end of critical section
     }
@@ -152,6 +153,7 @@ int main(int argc, char const *argv[]) {
     }
 
     // listen for max 2 connections queued
+    // 2 - number of queued connections we want on a socket
     if (listen(serv_sock, 2) < 0) {
         printf("Socket listening error\n");
         return -1;
@@ -167,12 +169,25 @@ int main(int argc, char const *argv[]) {
 
         // accept client - creates socket for comunication
         client_sock = accept(serv_sock, (struct sockaddr *) &client_addr, &len);
+        /*char str[INET_ADDRSTRLEN];
+		inet_ntop(AF_INET, &(client_addr.sin_addr), str, INET_ADDRSTRLEN);
+		printf("%s\n", str); // prints "192.0.2.33"
+        printf("Accepted client number %d: ", i);*/
         if (client_sock < 0) {
             printf("Accept error\n");
             return -1;
         }
 
-        printf("Accepted client number %d\n", i);
+        printf("Accepted client number %d. ", i);
+
+        char host[NI_MAXHOST];
+        char service[NI_MAXSERV];
+        memset(host, '\0', NI_MAXHOST);
+        memset(service, '\0', NI_MAXSERV);
+
+        if (getnameinfo((struct sockaddr *) &client_addr, sizeof client_addr, host, NI_MAXHOST, service, NI_MAXSERV, 0) == 0) {
+            printf("IP %s PORT %s\n", host, service);
+        }
 
         // create new thread for each client to handle outgoing messages
         if (pthread_create(&out_threads_id[i], NULL, out_thread, &client_sock) != 0) {
@@ -180,7 +195,7 @@ int main(int argc, char const *argv[]) {
             return -1;
         }
 
-        // create new thread for each client to handle incomming messages
+        // create new thread for each client to handle incoming messages
         if (pthread_create(&in_threads_id[i], NULL, in_thread, &client_sock) != 0) {
             printf("Failed to create thread for client\n");
             return -1;
@@ -214,9 +229,7 @@ int main(int argc, char const *argv[]) {
         }
         UNLOCK
         // end of critical section
-
-        printf("dupa\n");
-
+        
         int time_end = get_time();
         int duration = time_end - time_start;
 

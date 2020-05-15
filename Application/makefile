@@ -17,7 +17,7 @@ OutMessage.o:
 
 
 directories:
-	mkdir Debug
+	mkdir -p Debug
 
 
 clean:
