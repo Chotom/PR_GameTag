@@ -13,8 +13,8 @@
 
 class Socket {
 private:
-	int socket_descriptor;
-	sockaddr_in serv_addr;
+	int tcp_socket, udp_socket;
+	sockaddr_in server_addr, udp_addr;
 	InMessage* in_message;
 	OutMessage* out_message;
 

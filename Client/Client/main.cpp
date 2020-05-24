@@ -6,6 +6,8 @@
 #include "SDL2/SDL.h"
 #endif
 
+#include <iostream>
+
 #include "Game.h"
 
 int main(int argc, char* argv[]) {
@@ -25,6 +27,9 @@ int main(int argc, char* argv[]) {
 		duration = end_time - start_time;
 		if (duration < FRAME_TIME) {
 			SDL_Delay(FRAME_TIME - duration);
+		}
+		else {
+			std::cout << "Your computer is not handling fps correctly";
 		}
 	}
 

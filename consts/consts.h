@@ -6,6 +6,7 @@
 // consts
 #define SERVER_IP "127.0.0.1"
 #define PORT 9990
+#define UDP_PORT 9991
 
 #define CLIENTS_COUNT 2
 

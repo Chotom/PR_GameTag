@@ -1,6 +1,7 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
+#include <stdint.h>
 
 #include <sys/socket.h>
 #include <netinet/in.h>
@@ -37,15 +38,14 @@ struct player {
 void player__AddPos(struct player *self, int x, int y) {
     if (self->pos_x + x >= 0 && self->pos_x + x <= MAP_SIZE_X - PLAYER_SIZE)
         self->pos_x += x;
-    if (self->pos_y + y >= 0 && self->pos_y + y <= MAP_SIZE_y - PLAYER_SIZE)
+    if (self->pos_y + y >= 0 && self->pos_y + y <= MAP_SIZE_Y - PLAYER_SIZE)
         self->pos_y += y;
 }
 
-struct in_thread_data {
+struct thread_data {
     int socket;
     int player_id;
 } in_thread_player_data[CLIENTS_COUNT];
-
 
 void *out_thread(void *arg) {
     int socket = *((int *) arg);
@@ -87,7 +87,7 @@ void *out_thread(void *arg) {
 }
 
 void *in_thread(void *args) {
-    struct in_thread_data *current_thread_data = (struct in_thread_data *) args;
+    struct thread_data *current_thread_data = (struct thread_data *) args;
     int socket = current_thread_data->socket;
     int player_id = current_thread_data->player_id;
 
@@ -119,16 +119,17 @@ int main(int argc, char const *argv[]) {
     pthread_mutex_init(&semaphore, NULL);
 
     /*
-        Create server socket in kernel
+        Create a listening socket in kernel
         AF_INET     - Internet family of IPv4 addresses
         SOCK_STREAM - TCP
 
-        return value - non-negative serv_socket descriptor or -1 on error
+        return value - non-negative tcp_listening_socketet descriptor or -1 on error
      */
-    int serv_sock = socket(AF_INET, SOCK_STREAM, 0),    // server socket
-    client_sock;                                    // client socket - for later
+    int tcp_listening_socket = socket(AF_INET, SOCK_STREAM, 0),     // server socket
+        udp_out_socket = socket(AF_INET, SOCK_DGRAM, 0),        // udp socket for streaming data to clients
+        tcp_in_socket;                                      // client socket - for later
 
-    if (serv_sock < 0) {
+    if (tcp_listening_socket < 0) {
         printf("Socket creation error \n");
         return -1;
     }
@@ -148,7 +149,7 @@ int main(int argc, char const *argv[]) {
         
      */
     struct sockaddr_in serv_addr,       // server address
-    client_addr;                    // client address - for later
+        client_addr[CLIENTS_COUNT];     // array - clients addresses for udp_out_socket
 
     serv_addr.sin_family = AF_INET;                                 // IPv4
     serv_addr.sin_port = htons(PORT);                               // port - htons ensures byte order (BE/LE)
@@ -156,37 +157,50 @@ int main(int argc, char const *argv[]) {
     //serverAddr.sin_addr.s_addr = INADDR_ANY                       // bind to all available interfaces
     memset(serv_addr.sin_zero, '\0', sizeof serv_addr.sin_zero);    // set to zero
 
-    // bind server socket to address
-    if (bind(serv_sock, (struct sockaddr *) &serv_addr, sizeof(serv_addr)) < 0) {
-        printf("Socket binding error\n");
+    // bind listening socket to address
+    if (bind(tcp_listening_socket, (struct sockaddr *) &serv_addr, sizeof(serv_addr)) < 0) {
+        printf("TCP socket binding error\n");
+        return -1;
+    }
+
+    // bind udp streaming socket to the same address
+    if (bind(udp_out_socket, (struct sockaddr *) &serv_addr, sizeof(serv_addr)) < 0) {
+        printf("UDP socket binding error\n");
         return -1;
     }
 
     // listen for max 2 connections queued
     // 2 - number of queued connections we want on a socket
-    if (listen(serv_sock, 2) < 0) {
-        printf("Socket listening error\n");
+    if (listen(tcp_listening_socket, 2) < 0) {
+        printf("TCP Socket listening error\n");
         return -1;
     }
 
-    pthread_t out_threads_id[CLIENTS_COUNT];
     pthread_t in_threads_id[CLIENTS_COUNT];
 
-    printf("Server is now listening on port %d\n", PORT);
+    printf("PORT %hd\n", ntohs(serv_addr.sin_port));
+    printf("Server is now listening on port %hd\n", ntohs(serv_addr.sin_port));
 
     for (int i = 0; i < CLIENTS_COUNT; ++i) {
         int len;
 
         // accept client - creates socket for comunication
-        client_sock = accept(serv_sock, (struct sockaddr *) &client_addr, &len);
+        tcp_in_socket = accept(tcp_listening_socket, (struct sockaddr *) &client_addr[i], &len);
         /*char str[INET_ADDRSTRLEN];
 		inet_ntop(AF_INET, &(client_addr.sin_addr), str, INET_ADDRSTRLEN);
 		printf("%s\n", str); // prints "192.0.2.33"
         printf("Accepted client number %d: ", i);*/
-        if (client_sock < 0) {
+        if (tcp_in_socket < 0) {
             printf("Accept error\n");
             return -1;
         }
+        printf("PORT TCP: %d\n", (int) ntohs(client_addr[i].sin_port));
+
+        char dupa[5];
+        recvfrom(udp_out_socket, (char*) dupa, 5, 0, (struct sockaddr *) &client_addr[i], &len);
+        printf("%s\n", dupa);
+        
+        printf("PORT UDP: %d\n", (int) ntohs(client_addr[i].sin_port));
 
         printf("Accepted client number %d. ", i);
 
@@ -195,19 +209,13 @@ int main(int argc, char const *argv[]) {
         memset(host, '\0', NI_MAXHOST);
         memset(service, '\0', NI_MAXSERV);
 
-        if (getnameinfo((struct sockaddr *) &client_addr, sizeof client_addr, host, NI_MAXHOST, service, NI_MAXSERV,
+        if (getnameinfo((struct sockaddr *) &client_addr[i], sizeof client_addr[i], host, NI_MAXHOST, service, NI_MAXSERV,
                         0) == 0) {
-            printf("IP %s PORT %s\n", host, service);
-        }
-
-        // create new thread for each client to handle outgoing messages
-        if (pthread_create(&out_threads_id[i], NULL, out_thread, &client_sock) != 0) {
-            printf("Failed to create thread for client\n");
-            return -1;
+            printf("HOST %s SERVICE %s\n", host, service);
         }
 
         // create new thread for each client to handle incoming messages
-        in_thread_player_data[i].socket = client_sock;
+        in_thread_player_data[i].socket = tcp_in_socket;
         in_thread_player_data[i].player_id = i;
 
         if (pthread_create(&in_threads_id[i], NULL, in_thread, &in_thread_player_data[i]) != 0) {
@@ -216,10 +224,13 @@ int main(int argc, char const *argv[]) {
         }
     }
 
+    close(tcp_listening_socket);
+
     // main game loop - all players connected
     // once every frame
     while (1) {
         int time_start = get_time();
+        struct InMessage message;
 
         // start of critical section
         LOCK
@@ -244,20 +255,35 @@ int main(int argc, char const *argv[]) {
                     player__AddPos(&players[i], 1, 0);
                     break;
             }
+            message.pos_x[i] = players[i].pos_x;
+            message.pos_y[i] = players[i].pos_y;
         }
+
         UNLOCK
         // end of critical section
 
-        int time_end = get_time();
-        int duration = time_end - time_start;
+        // send current state of game to players
+        for (int i = 0; i < CLIENTS_COUNT; ++i) {
+            sendto(
+                udp_out_socket,
+                (char*) &message, sizeof message,
+                MSG_DONTWAIT,
+                (struct sockaddr*) &client_addr[i], sizeof (struct sockaddr)
+            );
+        }
 
+        // wait for frame to end
+        int duration = get_time() - time_start;
         if (duration < FRAME_TIME) {
             usleep((FRAME_TIME - duration) * 1000);
+        }
+        else {
+            // show info about server running to slow to handle current framerate
+            printf("Warning: server is not handling every frame. Game speed may differ from desired.\n");
         }
     }
 
     for (int i = 0; i < CLIENTS_COUNT; ++i) {
-        pthread_join(out_threads_id[i], NULL);
         pthread_join(in_threads_id[i], NULL);
     }
 
