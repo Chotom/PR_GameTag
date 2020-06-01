@@ -90,4 +90,5 @@ void Game::events() {
 			break;
 		}
 	}
+	//SDL_FlushEvents(SDL_FIRSTEVENT, SDL_LASTEVENT);
 }

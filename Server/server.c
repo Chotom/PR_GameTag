@@ -59,13 +59,13 @@ void *client_thread(void *args) {
         UNLOCK
         // end of critical section
 
-        printf("sending to player %d\n", player_id);  
+        printf("sending to player %d\n", player_id);
         // send current players positions
         if (send(socket, &server_message, sizeof server_message, 0) < 0) {
             printf("Server sending message error\n");
             exit(-1);
         }
-        printf("sendt to player %d\n", player_id);
+        printf("sent to player %d\n", player_id);
 
         printf("receiving from player %d\n", player_id);
         // receive player's direction
@@ -195,7 +195,7 @@ int main(int argc, char const *argv[]) {
         clients_thread_data[i].socket = client_sock;
         clients_thread_data[i].player_id = i;
     	
-        if (pthread_create(&threads_id[i], NULL, client_thread, &clients_thread_data) != 0) {
+        if (pthread_create(&threads_id[i], NULL, client_thread, &clients_thread_data[i]) != 0) {
             printf("Failed to create thread for client\n");
             return -1;
         }
