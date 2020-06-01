@@ -12,6 +12,12 @@ Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "Solution Items", "Solution 
 		..\consts\OutMessage.h = ..\consts\OutMessage.h
 	EndProjectSection
 EndProject
+Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "Server", "Server", "{3B456A4E-21F9-4011-9FDD-A1137B492005}"
+	ProjectSection(SolutionItems) = preProject
+		..\Server\player.h = ..\Server\player.h
+		..\Server\server.c = ..\Server\server.c
+	EndProjectSection
+EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
 		Debug|x64 = Debug|x64
@@ -31,6 +37,9 @@ Global
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE
+	EndGlobalSection
+	GlobalSection(NestedProjects) = preSolution
+		{3B456A4E-21F9-4011-9FDD-A1137B492005} = {206C76C6-21A6-4B71-9086-CF437A187343}
 	EndGlobalSection
 	GlobalSection(ExtensibilityGlobals) = postSolution
 		SolutionGuid = {2DC830A3-8139-4499-924D-0ED0DCBA53CF}

@@ -42,7 +42,7 @@ bool Game::is_running() {
 }
 
 void Game::update() {
-	socket->receive_message();
+	socket->receive_message(latest_key);
 	InMessage* message = socket->get_message();
 	for (int i = 0; i < CLIENTS_COUNT; i++) {
 		int new_x = message->pos_x[i];
@@ -77,31 +77,17 @@ void Game::events() {
 	case SDL_KEYDOWN:
 		switch (event.key.keysym.sym) {
 		case SDLK_UP:
-			if (latest_key != 'w') {
-				latest_key = 'w';
-				socket->send_message(latest_key);
-			}
+			latest_key = 'w';
 			break;
 		case SDLK_DOWN:
-			if (latest_key != 's') {
-				latest_key = 's';
-				socket->send_message(latest_key);
-			}
+			latest_key = 's';
 			break;
 		case SDLK_LEFT:
-			if (latest_key != 'a') {
-				latest_key = 'a';
-				socket->send_message(latest_key);
-			}
+			latest_key = 'a';
 			break;
 		case SDLK_RIGHT:
-			if (latest_key != 'd') {
-				latest_key = 'd';
-				socket->send_message(latest_key);
-			}
+			latest_key = 'd';
 			break;
 		}
-	default:
-		break;
 	}
 }
