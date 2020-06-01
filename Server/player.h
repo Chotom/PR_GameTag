@@ -12,12 +12,12 @@ struct Player {
 // Constructor (without allocation)
 void Player__init(struct Player* self, int player_id) {
     if(player_id == 0) {
-        self->pos_x = 0;
-        self->pos_y = 0;
+        self->pos_x = PLAYER_SIZE;
+        self->pos_y = PLAYER_SIZE;
     }
     else if(player_id == 1) {
-        self->pos_x = MAP_SIZE_X - PLAYER_SIZE;
-        self->pos_y = MAP_SIZE_Y - PLAYER_SIZE;
+        self->pos_x = MAP_SIZE_X - 2*PLAYER_SIZE;
+        self->pos_y = MAP_SIZE_Y - 2*PLAYER_SIZE;
     }
     else {
         self->pos_x = (MAP_SIZE_X - PLAYER_SIZE)/2;
@@ -27,11 +27,20 @@ void Player__init(struct Player* self, int player_id) {
 
 // Change position of player inside map
 void Player__AddPos(struct Player *self, int x, int y) {
-    if (self->pos_x + x >= 0 && self->pos_x + x <= MAP_SIZE_X - PLAYER_SIZE) {
-        self->pos_x += x;
-    }
-    if (self->pos_y + y >= 0 && self->pos_y + y <= MAP_SIZE_Y - PLAYER_SIZE) {
-        self->pos_y += y;
+    //printf("%d\n", (self->pos_x + x)/PLAYER_SIZE);
+    int ps_min = PLAYER_SIZE - 1;
+
+    if (MAP[(self->pos_y + y)/PLAYER_SIZE][(self->pos_x + x)/PLAYER_SIZE] == 0 &&
+            MAP[(self->pos_y + y)/PLAYER_SIZE][(self->pos_x + ps_min + x)/PLAYER_SIZE] == 0 &&
+            MAP[(self->pos_y + ps_min + y)/PLAYER_SIZE][(self->pos_x + x)/PLAYER_SIZE] == 0 &&
+            MAP[(self->pos_y + ps_min+ y)/PLAYER_SIZE][(self->pos_x + ps_min + x)/PLAYER_SIZE] == 0)
+    {
+        if (self->pos_x + x >= 0 && self->pos_x + x <= MAP_SIZE_X - PLAYER_SIZE) {
+            self->pos_x += x;
+        }
+        if (self->pos_y + y >= 0 && self->pos_y + y <= MAP_SIZE_Y - PLAYER_SIZE) {
+            self->pos_y += y;
+        }
     }
 }
 
