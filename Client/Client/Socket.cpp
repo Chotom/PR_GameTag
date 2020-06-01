@@ -57,10 +57,15 @@ Socket::~Socket() {
     delete out_message;
 }
 
-void Socket::receive_message() {
+void Socket::receive_message(char key) {
     // Save message from server
     if (recv(socket_descriptor, (char *) in_message, sizeof(InMessage), 0) < 0) {
         printf("Client receive message error\n");
+        exit(-1);
+    }
+    out_message->direction = key;
+    if (send(socket_descriptor, (char*)out_message, sizeof(OutMessage), 0) < 0) {
+        printf("Client sending message error\n");
         exit(-1);
     }
 }
