@@ -70,13 +70,13 @@ void Socket::receive_message(char key) {
     }
 }
 
-void Socket::send_message(char key) {
-    out_message->direction = key;
-    if (send(socket_descriptor, (char *) out_message, sizeof(OutMessage), 0) < 0) {
-        printf("Client sending message error\n");
-        exit(-1);
-    }
-}
+//void Socket::send_message(char key) {
+//    out_message->direction = key;
+//    if (send(socket_descriptor, (char *) out_message, sizeof(OutMessage), 0) < 0) {
+//        printf("Client sending message error\n");
+//        exit(-1);
+//    }
+//}
 
 InMessage *Socket::get_message() {
     return in_message;

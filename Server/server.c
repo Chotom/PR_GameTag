@@ -59,15 +59,15 @@ void *client_thread(void *args) {
         UNLOCK
         // end of critical section
 
-        printf("sending to player %d\n", player_id);
+        //printf("sending to player %d\n", player_id);
         // send current players positions
         if (send(socket, &server_message, sizeof server_message, 0) < 0) {
             printf("Server sending message error\n");
             exit(-1);
         }
-        printf("sent to player %d\n", player_id);
+       printf("sent to player %d\n", player_id);
 
-        printf("receiving from player %d\n", player_id);
+        //printf("receiving from player %d\n", player_id);
         // receive player's direction
         if (recv(socket, &client_message, sizeof client_message, 0) < 0) {
             printf("Server receive message error\n");
@@ -231,9 +231,15 @@ int main(int argc, char const *argv[]) {
             }
         }
 
-        // Check for collision
+        // Check for collision between players
         for (int i = 0; i < CLIENTS_COUNT; i++) {
-            Player__CheckCollision(&players[i], &players[tagged_id]);
+            if(Player__CheckCollision(&players[i], &players[tagged_id])){
+                // Reset caught player position
+                Player__init(&players[i], i);
+                Player__init(&players[tagged_id], tagged_id);
+                tagged_id = i;
+                break;
+            }
         }
 
         UNLOCK
