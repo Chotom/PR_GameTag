@@ -1,14 +1,12 @@
 #ifdef _WIN32
-#include "SDL.h"
-#endif
-
-#ifdef linux
-#include "SDL2/SDL.h"
+	#include "SDL.h"
+#else
+	#include "SDL2/SDL.h"
 #endif
 
 #include "Game.h"
 
-#include "TextureLoader.h"
+#include <iostream>
 
 SDL_Renderer* Game::renderer = nullptr;
 
@@ -35,6 +33,8 @@ Game::~Game() {
 	SDL_DestroyWindow(window);
 	SDL_DestroyRenderer(renderer);
 	SDL_Quit();
+
+	std::cout << "~Game" << std::endl;
 }
 
 bool Game::is_running() {
@@ -42,7 +42,11 @@ bool Game::is_running() {
 }
 
 void Game::update() {
-	socket->receive_message(latest_key);
+	if (!socket->receive_message(latest_key)) {
+		// game over - one client disconnected
+		running = false;
+		return;
+	}
 	InMessage* message = socket->get_message();
 	for (int i = 0; i < CLIENTS_COUNT; i++) {
 		int new_x = message->pos_x[i];
@@ -60,8 +64,8 @@ void Game::update() {
 void Game::render() {
     SDL_SetRenderDrawColor(renderer, 0, 0, 0, 0);
     SDL_RenderClear(renderer);
-    for (int i = 0; i < CLIENTS_COUNT; i++) {
-        players[i]->render();
+    for (auto& player : players) {
+	    player->render();
     }
 
     SDL_Rect fillRect;
@@ -87,6 +91,7 @@ void Game::events() {
 	
 	switch (event.type) {
 	case SDL_QUIT:
+		std::cout << "quit" << std::endl;
 		running = false;
 		break;
 	case SDL_KEYDOWN:

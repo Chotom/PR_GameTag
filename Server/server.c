@@ -16,7 +16,21 @@
 #include "../consts/OutMessage.h"
 #include "player.h"
 
-pthread_mutex_t semaphore;
+#define LOCK pthread_mutex_lock(&semaphore);
+#define GAMEOVER_LOCK pthread_mutex_lock(&gameover_semaphore);
+#define UNLOCK pthread_mutex_unlock(&semaphore);
+#define GAMEOVER_UNLOCK pthread_mutex_unlock(&gameover_semaphore);
+
+pthread_mutex_t semaphore, gameover_semaphore;
+
+char direction = 's';
+int gameover = 0;
+int tagged_id = 0;
+struct Player players[CLIENTS_COUNT];
+struct thread_data {
+    int socket;
+    int player_id;
+} clients_thread_data[CLIENTS_COUNT];
 
 int get_time() {
     struct timeval currentTime;
@@ -24,15 +38,19 @@ int get_time() {
     return currentTime.tv_sec * (int) 1000 + currentTime.tv_usec / 1000;
 }
 
-char direction = 's';
-int tagged_id = 0;
+int close_socket(int socket) {
+    int status = 0;
 
-struct Player players[CLIENTS_COUNT];
+	#ifdef _WIN32
+	    status = shutdown(socket, SD_BOTH);
+	    if (status == 0) { status = closesocket(socket); }
+	#else
+	    status = shutdown(socket, SHUT_RDWR);
+	    if (status == 0) { status = close(socket); }
+	#endif
 
-struct thread_data {
-    int socket;
-    int player_id;
-} clients_thread_data[CLIENTS_COUNT];
+    return status;
+}
 
 void *client_thread(void *args) {
     struct thread_data* client_thread_data = (struct thread_data*) args;
@@ -43,7 +61,9 @@ void *client_thread(void *args) {
     struct OutMessage client_message;
 
     // once every frame
-    while (1) {
+    GAMEOVER_LOCK
+    while (!gameover) {
+    	GAMEOVER_UNLOCK
         int time_start = get_time();
 
         // start of critical section
@@ -59,21 +79,18 @@ void *client_thread(void *args) {
         UNLOCK
         // end of critical section
 
-        //printf("sending to player %d\n", player_id);
-        // send current players positions
-        if (send(socket, &server_message, sizeof server_message, 0) < 0) {
-            printf("Server sending message error\n");
-            exit(-1);
+        if (
+            // send current players positions
+            send(socket, &server_message, sizeof server_message, 0) < 0 ||
+			// receive player's direction
+			recv(socket, &client_message, sizeof client_message, 0) < 0
+            ) {
+        	// player disconnected, game over
+            GAMEOVER_LOCK
+            gameover = 1;
+            GAMEOVER_UNLOCK
+            break;
         }
-       printf("sent to player %d\n", player_id);
-
-        //printf("receiving from player %d\n", player_id);
-        // receive player's direction
-        if (recv(socket, &client_message, sizeof client_message, 0) < 0) {
-            printf("Server receive message error\n");
-            exit(-1);
-        }
-        printf("received from player %d\n", player_id);
 
         // start of critical section
         LOCK
@@ -87,10 +104,12 @@ void *client_thread(void *args) {
         if (duration < FRAME_TIME) {
             usleep((FRAME_TIME - duration) * 1000);
         }
-    }
 
-    printf("Exit thread \n");
-    close(socket);
+    	GAMEOVER_LOCK
+    }
+	
+    printf("Player %d disconnected.\n", player_id);
+    close_socket(socket);
     pthread_exit(NULL);
 }
 
@@ -98,6 +117,7 @@ int main(int argc, char const *argv[]) {
 
     // initialize semaphore
     pthread_mutex_init(&semaphore, NULL);
+    pthread_mutex_init(&gameover_semaphore, NULL);
 
     /* * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * *
      * Create server socket in kernel
@@ -106,10 +126,10 @@ int main(int argc, char const *argv[]) {
      *    SOCK_STREAM - TCP
      *    return value - non-negative serv_socket descriptor or -1 on error
      * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * */
-    int serv_sock = socket(AF_INET, SOCK_STREAM, 0);    // server socket
+    int listening_socket = socket(AF_INET, SOCK_STREAM, 0);    // server socket
     int client_sock;                                    // client socket - for later
 
-    if (serv_sock < 0) {
+    if (listening_socket < 0) {
         printf("Socket creation error \n");
         return -1;
     }
@@ -136,13 +156,13 @@ int main(int argc, char const *argv[]) {
     memset(serv_addr.sin_zero, '\0', sizeof serv_addr.sin_zero);    // set to zero
 
     // bind server socket to address
-    if (bind(serv_sock, (struct sockaddr *) &serv_addr, sizeof(serv_addr)) < 0) {
+    if (bind(listening_socket, (struct sockaddr *) &serv_addr, sizeof(serv_addr)) < 0) {
         printf("Socket binding error\n");
         return -1;
     }
 
     // listen for max 2 connections queued (2 - number of queued connections we want on a socket)
-    if (listen(serv_sock, 2) < 0) {
+    if (listen(listening_socket, 2) < 0) {
         printf("Socket listening error\n");
         return -1;
     }
@@ -165,7 +185,7 @@ int main(int argc, char const *argv[]) {
         Player__init(&players[i], i);   // Set start position for players
 
         // accept client - creates socket for comunication
-        client_sock = accept(serv_sock, (struct sockaddr *) &client_addr, &len);
+        client_sock = accept(listening_socket, (struct sockaddr *) &client_addr, &len);
 
         if (client_sock < 0) {
             printf("Accept error\n");
@@ -203,7 +223,10 @@ int main(int argc, char const *argv[]) {
 
     // main game loop - all players connected
     // once every frame
-    while (1) {
+	GAMEOVER_LOCK
+    while (!gameover) {
+    	GAMEOVER_UNLOCK
+    	
         int time_start = get_time();
 
         // start of critical section
@@ -212,22 +235,22 @@ int main(int argc, char const *argv[]) {
         // move players
         for (int i = 0; i < CLIENTS_COUNT; i++) {
             switch (players[i].direction) {
-                case 'w':
-                    //players[i].pos_y--;
-                    Player__AddPos(&players[i], 0, -1);
-                    break;
-                case 's':
-                    //players[i].pos_y++;
-                    Player__AddPos(&players[i], 0, 1);
-                    break;
-                case 'a':
-                    //players[i].pos_x--;
-                    Player__AddPos(&players[i], -1, 0);
-                    break;
-                case 'd':
-                    //players[i].pos_x++;
-                    Player__AddPos(&players[i], 1, 0);
-                    break;
+            case 'w':
+                //players[i].pos_y--;
+                Player__AddPos(&players[i], 0, -1);
+                break;
+            case 's':
+                //players[i].pos_y++;
+                Player__AddPos(&players[i], 0, 1);
+                break;
+            case 'a':
+                //players[i].pos_x--;
+                Player__AddPos(&players[i], -1, 0);
+                break;
+            case 'd':
+                //players[i].pos_x++;
+                Player__AddPos(&players[i], 1, 0);
+                break;
             }
         }
 
@@ -244,18 +267,23 @@ int main(int argc, char const *argv[]) {
 
         UNLOCK
         // end of critical section
-
+    	
         int time_end = get_time();
         int duration = time_end - time_start;
 
         if (duration < FRAME_TIME) {
             usleep((FRAME_TIME - duration) * 1000);
         }
+    	
+        GAMEOVER_LOCK
     }
+	
+    GAMEOVER_UNLOCK
 
     for (int i = 0; i < CLIENTS_COUNT; ++i) {
         pthread_join(threads_id[i], NULL);
     }
-
+    close_socket(listening_socket);
+	
     return 0;
 }

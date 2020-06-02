@@ -29,5 +29,5 @@ void GameObject::change_texture(const char* texture_path){
 }
 
 void GameObject::render() {
-	SDL_RenderCopy(Game::renderer, texture, NULL, &dst_rect);
+	SDL_RenderCopy(Game::renderer, texture, nullptr, &dst_rect);
 }

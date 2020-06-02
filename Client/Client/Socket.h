@@ -22,7 +22,7 @@ public:
 	Socket();
 	~Socket();
 
-	void receive_message(char key);
+	bool receive_message(char key);
 	void send_message(char key);
 	InMessage* get_message();
 };
