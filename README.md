@@ -1,5 +1,5 @@
 # PR_GameTag
-Multiplayer game with multi-threading zrealizowana w ramach projektu z przedmiotu przetwarzanie rozproszone
+Multiplayer game with multi-threading.
 
 ## Table of contents
 * [Description](#description)
